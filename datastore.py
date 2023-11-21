@@ -1,5 +1,4 @@
 import openai
-from openai import OpenAI
 import pinecone
 from prompts import INFO_AGENT_PROMPT
 import os
@@ -10,6 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+openai.api_key = os.environ.get('OPENAI_API_KEY')
 
 PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY')
 PINECONE_ENV = os.environ.get('PINECONE_ENVIRONMENT')
@@ -24,8 +24,6 @@ EMBED_DIM = 1536 # text embedding vector size
 
 class PineconeDatastore:
     def __init__(self, user='Alice'):
-        
-        self.llm_client = OpenAI(api_key=OPENAI_API_KEY)
 
         self.user = user
 
@@ -96,12 +94,12 @@ class PineconeDatastore:
     def _get_text_embedding(self, text):
         # Get embedding for text
 
-        res = self.llm_client.embeddings.create(
+        res = openai.Embedding.create(
             input=[text],
             model=EMB_MODEL
         )
 
-        return res.data[0].embedding # list rep of embedding
+        return res['data'][0]['embedding'] # list rep of embedding
 
     # Only call if you want to delete the entire index!
     # Can't be reversed

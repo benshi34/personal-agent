@@ -1,19 +1,15 @@
-import openai
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 from prompts import INFO_AGENT_PROMPT
 import os
+from datastore import PineconeDatastore
 
-openai.api_key = os.environ.get('OPENAI_API_KEY')
 
-class Datastore:
-    def read(text, k=None):
-        return "August 03, 2023, 15:13:13 Mindy has been saying some very bad things about Brad to her friends."
-
-    def write(text):
-        return "Write complete!"
 
 class MemoryAgent:
     def __init__(self, init_prompt, model='gpt-4', metadata=None):
-        self.datastore = Datastore()
+        self.datastore = PineconeDatastore()
         self.model = model
         self.init_prompt = init_prompt
         # All messages
@@ -37,11 +33,9 @@ class MemoryAgent:
     # One LLM generation (ending with a function call)
     def _loop(self):
         stop = ['\nObservation:']
-        thought = openai.ChatCompletion.create(
-            model=self.model,
-            messages=self.messages,
-            stop=stop,
-        )
+        thought = client.chat.completions.create(model=self.model,
+        messages=self.messages,
+        stop=stop)
         self.messages.append(thought["choices"][0]["message"])
         thought_content = thought["choices"][0]["message"]["content"]
         observation = None

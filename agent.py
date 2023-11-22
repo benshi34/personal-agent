@@ -6,8 +6,8 @@ from datastore import PineconeDatastore
 openai.api_key = os.environ.get('OPENAI_API_KEY')
 
 class MemoryAgent:
-    def __init__(self, init_prompt, model='gpt-4', metadata=None):
-        self.datastore = PineconeDatastore()
+    def __init__(self, datastore, init_prompt, model='gpt-4', metadata=None):
+        self.datastore = datastore
         self.model = model
         self.init_prompt = init_prompt
         # All messages
@@ -73,7 +73,12 @@ class MemoryAgent:
         return None
 
 def main():
-    agent = MemoryAgent(INFO_AGENT_PROMPT, model='gpt-4-1106-preview', metadata="The current user's name is Brad.")
+    datastore = PineconeDatastore()
+    datastore.write("Brad and Jenny broke up 5 years ago.")
+    datastore.write("Brad and Jenny don't like each other very much")
+    datastore.write("Jenny has three dogs.")
+    agent = MemoryAgent(datastore, INFO_AGENT_PROMPT, model='gpt-4-1106-preview', metadata="The current user's name is Brad.")
+
     while True:
         user_input = input("Talk to the agent: ")
         output = agent.run(user_input)

@@ -3,7 +3,7 @@ INFO_AGENT_PROMPT = (
     You are an agent that is conversing with a user. However, you also have access to a memory API that stores relevant information about the user, which you can call to inform your responses. You have access to the following function calls:
     (1) Write[info]: Writes new, useful information to memory for future reference.
     (2) Read[query]: Reads from the memory, obtaining useful information relevant to the query text.
-    (3) Finish[repsonse]: Ends the reasonong loop and returns the response to be displayed to the user.
+    (3) Finish[repsonse]: Ends the reasoning loop and returns the response to be displayed to the user.
     Interleave thought and action steps to utilize the memory API, responding to the user with an informed answer. Additionally, when provided with new information, be sure to write it to memory for future reference.
 
     Here are some examples.

@@ -60,7 +60,6 @@ class PineconeDatastore:
         
         # If k is None, then dynamically determin the k nearest neighbors to
         # include in contest
-
         matches = None
 
         if k is None:
@@ -69,7 +68,7 @@ class PineconeDatastore:
             # should be sorted in descending order
             scores = [match['score'] for match in matches] 
 
-            indexes_keep = self._determine_indices_kde(scores)
+            indexes_keep = _determine_indices_kde(scores)
 
             matches = [matches[i] for i in indexes_keep]
         
@@ -89,7 +88,7 @@ class PineconeDatastore:
     # can access scores through match['score']
     # can access text through match['metadata']['text']
     def _index_query(self, text, k, include_values):
-        query_embedding = self._get_text_embedding(text)
+        query_embedding = _get_text_embedding(text)
 
         res = self.index.query(
                                 [query_embedding], 
@@ -100,51 +99,7 @@ class PineconeDatastore:
 
         return res
     
-    # use manual cosine similarity cutoff to determine items
-    # include in context
-    def _determine_indices_manual(self, scores, cutoff):
 
-        indices = np.array(range(len(scores)))
-        scores = np.array(scores)
-
-        ret = indices[scores > cutoff].tolist()
-
-        if len(ret) == 0:
-            return [1]
-        
-        return ret
-    
-    # Use kmeans with self-supplied value for k
-    # assume k is between 2 and 5 for most data
-    def _determine_indices_kmeans(self, scores, k=3):
-        indices = np.array(range(len(scores)))
-
-        X = np.array([scores]).T
-        kmeans = KMeans(n_clusters=k, n_init='auto')
-        kmeans.fit(X)
-        max_label = np.argmax(kmeans.cluster_centers_)
-
-        mask = kmeans.labels_.flatten() == max_label
-
-        return indices[mask].tolist()
-    
-    # https://stackoverflow.com/questions/35094454/how-would-one-use-kernel-density-estimation-as-a-1d-clustering-method-in-scikit
-    # It's not obvious what the optimal bandwidth is for KDE
-    def _determine_indices_kde(self, scores):
-
-        X = np.array([scores]).T
-
-        kde = KernelDensity(kernel='gaussian', bandwidth=0.5).fit(X)
-
-        s = np.linspace(0,1,50)
-
-        pdf = np.exp(kde.score_samples(s.reshape(-1,1)))
-
-        mi = argrelextrema(pdf, np.less)[0]
-
-        cutoff = np.max(s[mi])
-
-        return self._determine_indices_manual(scores, cutoff)
 
     def write(self, text):
 
@@ -152,7 +107,7 @@ class PineconeDatastore:
         timestamp = datetime.now().strftime("%B %d, %Y, %H:%M:%S")
         text = f"{timestamp}: {text}"
 
-        embedding = self._get_text_embedding(text) # list rep of embedding
+        embedding = _get_text_embedding(text) # list rep of embedding
 
         metadata = {
             'user': self.user,
@@ -188,7 +143,7 @@ class PineconeDatastore:
             timestamp = datetime.now().strftime("%B %d, %Y, %H:%M:%S")
             text = f"{timestamp}: {text}"
 
-            embedding = self._get_text_embedding(text) # list rep of embedding
+            embedding = _get_text_embedding(text) # list rep of embedding
 
             vectors.append(
                 (
@@ -204,15 +159,43 @@ class PineconeDatastore:
         for ids_vectors_chunk in self._chunks(vectors):
             self.index.upsert(vectors=ids_vectors_chunk)
     
-    def _get_text_embedding(self, text):
-        # Get embedding for text
 
-        res = openai.Embedding.create(
-            input=[text],
-            model=EMB_MODEL
-        )
+    # https://stackoverflow.com/questions/75894927/pinecone-can-i-get-all-dataall-vector-from-a-pinecone-index-to-move-data-i
+    def get_ids_from_query(self, input_vector):
+        results = self.index.query(vector=input_vector,
+                            top_k=10000, include_values=False)
+        ids = set()
+        for result in results['matches']:
+            ids.add(result['id'])
+        return ids
 
-        return res['data'][0]['embedding'] # list rep of embedding
+    # https://stackoverflow.com/questions/75894927/pinecone-can-i-get-all-dataall-vector-from-a-pinecone-index-to-move-data-i
+    def get_all_ids_from_index(self, namespace=""):
+        #print(index.describe_index_stats())
+        num_vectors = self.index.describe_index_stats()["total_vector_count"]#[namespace]['vector_count']
+        all_ids = set()
+        while len(all_ids) < num_vectors:
+            
+            input_vector = np.random.rand(EMBED_DIM).tolist()
+            
+            ids = self.get_ids_from_query(input_vector)
+            all_ids.update(ids)
+            
+
+        return list(all_ids)
+    
+    def get_all_memories(self):
+        all_ids = self.get_all_ids_from_index()
+
+        resp = self.index.fetch(ids=all_ids)
+
+        mems = []
+
+        for record in list(resp['vectors'].values()):
+            mems.append(record['metadata']['text'])
+        
+        return mems
+
 
     # Only call if you want to delete the entire index!
     # Can't be reversed
@@ -224,6 +207,7 @@ class PineconeDatastore:
 # Store data locally and load from existing files
 class PrimitiveDatastore:
     def __init__(self, user, file=None) -> None:
+        # list of dicts with fields: text, user, embedding
         self.dataset = []
         self.user = user
 
@@ -231,11 +215,153 @@ class PrimitiveDatastore:
             f = open(file)
             self.dataset = json.load(f)
 
-    def read(self):
-        pass
-    def write(self):
-        pass
+
+    def read(self, text, k = None):
+
+        if(len(self.dataset) == 0):
+            return ""
+
+        query_embedding = _get_text_embedding(text)
+
+        scores = np.array([cosine_similarity(query_embedding, sample['embedding']) for sample in self.dataset])
+
+        asc_order = np.argsort(scores)
+
+        desc_order = np.flip(asc_order)
+
+        matches = None
+
+        if k is None:
+            # keep top 100 to consider relevance
+            desc_order = desc_order[0:min(len(desc_order),100)]
+
+            matches = [self.dataset[i] for i in desc_order]
+            scores = scores[desc_order]
+
+            indexes_keep = _determine_indices_kde(scores)
+
+            matches = [matches[i] for i in indexes_keep]
+        else:
+            desc_order = desc_order[0:min(len(desc_order),k)]
+            matches = [self.dataset[i] for i in desc_order]
+
+        # create context given a set of matches
+        context = ""
+
+        for match in matches:
+            context += match['text'] + '\n'
+
+        return context
+
+
+    def write(self, text):
+        # preprend text with timestamp
+        timestamp = datetime.now().strftime("%B %d, %Y, %H:%M:%S")
+        text = f"{timestamp}: {text}"
+
+        embedding = _get_text_embedding(text) # list rep of embedding
+
+        record = {
+            'text': text,
+            'user': self.user,
+            'embedding': embedding,
+        }
+
+        self.dataset.append(record)
+    
+    def get_all_memories(self):
+
+        mems = [record['text'] for record in self.dataset]
+
+        return mems
+
 
     def save_dataset(self, path):
         out_file = open(path, 'w')
         json.dump(self.dataset, out_file)
+
+
+# Static helper methods below
+# -----------------------------------------
+
+def cosine_similarity(vec1, vec2):
+    vec1 = np.array(vec1)
+    vec2 = np.array(vec2)
+    dot_product = np.dot(vec1, vec2)
+    norm_vec1 = np.linalg.norm(vec1)
+    norm_vec2 = np.linalg.norm(vec2)
+    
+    similarity = dot_product / (norm_vec1 * norm_vec2)
+    return similarity
+
+def _get_text_embedding(text):
+        # Get embedding for text
+
+        res = openai.Embedding.create(
+            input=[text],
+            model=EMB_MODEL
+        )
+
+        return res['data'][0]['embedding'] # list rep of embedding
+
+# use manual cosine similarity cutoff to determine items
+# include in context
+def _determine_indices_manual(scores, cutoff):
+
+    indices = np.array(range(len(scores)))
+    scores = np.array(scores)
+
+    ret = indices[scores > cutoff].tolist()
+
+
+    # if no scores meet cutoff just return index for highest score
+    if len(ret) == 0:
+        return [int(np.argmax(scores))]
+    
+    return ret
+
+# Use kmeans with self-supplied value for k
+# assume k is between 2 and 5 for most data
+def _determine_indices_kmeans(scores, k=3):
+    indices = np.array(range(len(scores)))
+
+    X = np.array([scores]).T
+    kmeans = KMeans(n_clusters=k, n_init='auto')
+    kmeans.fit(X)
+    max_label = np.argmax(kmeans.cluster_centers_)
+
+    mask = kmeans.labels_.flatten() == max_label
+
+    return indices[mask].tolist()
+
+# https://stackoverflow.com/questions/35094454/how-would-one-use-kernel-density-estimation-as-a-1d-clustering-method-in-scikit
+# It's not obvious what the optimal bandwidth is for KDE
+def _determine_indices_kde(scores):
+
+    X = np.array([scores]).T
+
+    kde = KernelDensity(kernel='gaussian', bandwidth=0.5).fit(X)
+
+    s = np.linspace(0,1,50)
+
+    # kde produces log likelihood so we apply exp transform
+    pdf = np.exp(kde.score_samples(s.reshape(-1,1)))
+
+    mi = argrelextrema(pdf, np.less)[0]
+
+    # edge case, no relative extrema found
+    if len(mi) == 0:
+        # restrict look to top 20% in cumulative prob
+        # rescale so that cumulative prob sums to 1
+        pdf = pdf/np.sum(pdf)
+
+        threshold_value = 0.8
+
+        ind = np.where(np.cumsum(pdf) > threshold_value)[0][0]
+
+        cutoff = s[ind]
+    # use largest rel min as cutoff
+    else: 
+        cutoff = np.max(s[mi])
+
+    return _determine_indices_manual(scores, cutoff)

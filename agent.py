@@ -73,7 +73,7 @@ class MemoryAgent:
         return None
 
 def main():
-    datastore = PineconeDatastore()
+    datastore = PineconeDatastore("Brad")
     datastore.write("Brad and Jenny broke up 5 years ago.")
     datastore.write("Brad and Jenny don't like each other very much")
     datastore.write("Jenny has three dogs.")

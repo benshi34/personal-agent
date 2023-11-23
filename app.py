@@ -9,14 +9,6 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 openai.api_key = os.environ.get('OPENAI_API_KEY')
 
-data = [
-    "Row 1: Lorem ipsum dolor sit amet",
-    "Row 2: Consectetur adipiscing elit",
-    "Row 3: Sed do eiusmod tempor incididunt",
-    "Row 4: Ut labore et dolore magna aliqua",
-    "Row 5: Ut enim ad minim veniam",
-]
-
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -42,6 +34,7 @@ if selected_tab == "Chat":
 
 elif selected_tab == "Memory":
     st.title("Memory")
+    data = datastore.get_all_memories()
     for row in data:
         st.text(row)
 

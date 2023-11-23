@@ -187,6 +187,9 @@ class PineconeDatastore:
     def get_all_memories(self):
         all_ids = self.get_all_ids_from_index()
 
+        if len(all_ids) == 0:
+            return []
+
         resp = self.index.fetch(ids=all_ids)
 
         mems = []
@@ -201,6 +204,7 @@ class PineconeDatastore:
     # Can't be reversed
     def delete_index(self):
         pinecone.delete_index(INDEX_NAME)
+        print("Successfully deleted index!")
 
 
 # Class for doing primitive KNN and datastore

@@ -68,6 +68,9 @@ class PineconeDatastore:
         if k is None:
             matches = self._index_query(text, k=100, include_values=False)['matches']
             
+            if len(matches) == 0:
+                return "There are no memories."
+            
             # should be sorted in descending order
             scores = [match['score'] for match in matches] 
 
@@ -77,7 +80,8 @@ class PineconeDatastore:
         
         else:
             matches = self._index_query(text, k=k, include_values=False)['matches']
-            
+            if len(matches) == 0:
+                return "There are no memories."
         
         # create context given a set of matches
         context = ""

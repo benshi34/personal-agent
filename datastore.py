@@ -25,7 +25,7 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
 EMB_MODEL = "text-embedding-ada-002"
 
-INDEX_NAME = 'personal-agent'
+INDEX_PREFIX = 'personal-agent'
 
 EMBED_DIM = 1536 # text embedding vector size
 
@@ -40,18 +40,21 @@ class PineconeDatastore:
             environment=PINECONE_ENV
         )
 
-        if INDEX_NAME not in pinecone.list_indexes():
-            print(f"Creating {INDEX_NAME} index from scratch")
+        self.INDEX_NAME = f"{INDEX_PREFIX}-{self.user.lower()}"
+
+        if self.INDEX_NAME not in pinecone.list_indexes():
+            print(f"Creating {self.INDEX_NAME} index from scratch")
             pinecone.create_index(
-                name=INDEX_NAME, 
+                name=self.INDEX_NAME, 
                 dimension=EMBED_DIM,
-                metric='cosine'
+                metric='cosine',
+                pods=1
             )
 
             # wait for index to be fully initialized
             time.sleep(1)
         
-        self.index = pinecone.Index(INDEX_NAME)
+        self.index = pinecone.Index(self.INDEX_NAME)
 
         print("Pinecone Datastore initialized!")
 
@@ -203,7 +206,9 @@ class PineconeDatastore:
     # Only call if you want to delete the entire index!
     # Can't be reversed
     def delete_index(self):
-        pinecone.delete_index(INDEX_NAME)
+        if self.INDEX_NAME not in pinecone.list_indexes():
+            print("Index already deleted!")
+        pinecone.delete_index(self.INDEX_NAME)
         print("Successfully deleted index!")
 
 

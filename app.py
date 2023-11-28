@@ -18,7 +18,7 @@ with st.sidebar:
 
 # Instantiating the agent:
 datastore = PineconeDatastore(user)
-agent = MemoryAgent(datastore, INFO_AGENT_PROMPT, model='gpt-4-1106-preview', metadata="The current user's name is Brad.")
+agent = MemoryAgent(datastore, INFO_AGENT_PROMPT, model='gpt-4-1106-preview', metadata=f"The current user's name is {user}.")
 
 if selected_tab == "Chat":
     st.title("Chat")

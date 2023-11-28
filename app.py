@@ -14,9 +14,10 @@ if "messages" not in st.session_state:
 
 with st.sidebar:
     selected_tab = st.radio("Select a Tab", ["Chat", "Memory"])
+    user = st.radio("Select a Tab", ["Alice", "Brad"])
 
 # Instantiating the agent:
-datastore = PineconeDatastore("Brad")
+datastore = PineconeDatastore(user)
 agent = MemoryAgent(datastore, INFO_AGENT_PROMPT, model='gpt-4-1106-preview', metadata="The current user's name is Brad.")
 
 if selected_tab == "Chat":

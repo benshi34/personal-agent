@@ -214,7 +214,10 @@ class PineconeDatastore:
             print("Index already deleted!")
         pinecone.delete_index(self.INDEX_NAME)
         print("Successfully deleted index!")
-
+    
+    # Does not delete the index, just erases all the memories in the index
+    def delete_vectors(self):
+        self.index.delete(delete_all=True)
 
 # Class for doing primitive KNN and datastore
 # Store data locally and load from existing files

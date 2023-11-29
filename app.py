@@ -35,6 +35,7 @@ if selected_tab == "Chat":
 
 elif selected_tab == "Memory":
     st.title("Memory")
+    st.button("Erase Memories", on_click=datastore.delete_vectors, type="primary")
     data = datastore.get_all_memories()
     for row in data:
         st.text(row)

@@ -66,7 +66,7 @@ class MemoryAgent:
                 return None
         except Exception as e:
             print("Could not derive function call")
-            raise e
+            return "String Parse Error"
         
         if observation:
             if return_thoughts:

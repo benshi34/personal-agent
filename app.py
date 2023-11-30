@@ -13,8 +13,9 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 with st.sidebar:
-    selected_tab = st.radio("Select a Tab", ["Chat", "Memory"])
-    user = st.radio("Select a Tab", ["Alice", "Brad"])
+    selected_tab = st.radio("Select a window:", ["Chat", "Memory"])
+    user = st.radio("Select a user:", ["Alice", "Brad"])
+    display_thoughts = st.radio("Display internal thoughts:", ["Off", "On"])
 
 # Instantiating the agent:
 datastore = PineconeDatastore(user)
@@ -30,7 +31,10 @@ if selected_tab == "Chat":
 
         with st.chat_message("assistant"):
             with st.spinner("Generating model response..."):
-                response = agent.run(prompt)
+                if display_thoughts == 'Off':
+                    response = agent.run(prompt)
+                elif display_thoughts == 'On':
+                    response = agent.run(prompt, return_thoughts=True)
             st.markdown(response)
 
 elif selected_tab == "Memory":

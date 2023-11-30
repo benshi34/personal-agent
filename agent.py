@@ -2,6 +2,7 @@ import openai
 from prompts import INFO_AGENT_PROMPT
 import os
 from datastore import PineconeDatastore
+import streamlit as st
 
 openai.api_key = os.environ.get('OPENAI_API_KEY')
 
@@ -17,19 +18,19 @@ class MemoryAgent:
         if metadata:
             self.messages.append({'role': 'user', 'content': '[METADATA]: ' + metadata})
               
-    def run(self, text):
+    def run(self, text, return_thoughts=False):
         self.messages.append({'role': 'user', 'content': 'User: ' + text})
         self.con_messages.append({'role': 'user', 'content': text})
         counter = 0
         while counter < 5:
-            content = self._loop()
+            content = self._loop(return_thoughts=return_thoughts)
             if content:
                 return content
             counter += 1
         return None
 
     # One LLM generation (ending with a function call)
-    def _loop(self):
+    def _loop(self, return_thoughts):
         stop = ['\nObservation:']
         thought = openai.ChatCompletion.create(
             model=self.model,
@@ -38,6 +39,9 @@ class MemoryAgent:
         )
         self.messages.append(thought["choices"][0]["message"])
         thought_content = thought["choices"][0]["message"]["content"]
+        if return_thoughts:
+            st.markdown("MODEL THOUGHT")
+            st.markdown(thought_content)
         observation = None
         try:
             thought, action = thought_content.strip().split('\nAction:')
@@ -65,6 +69,9 @@ class MemoryAgent:
             raise e
         
         if observation:
+            if return_thoughts:
+                st.markdown("FUNCTION OUTPUT")
+                st.markdown(observation)
             self.messages.append({'role': 'function', "name": function_call, 'content': 'Observation: ' + observation})
             print('---------')
             print("Memory Output: ")

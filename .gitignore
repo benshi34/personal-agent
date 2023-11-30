@@ -2,3 +2,4 @@
 .env
 primitive_datastore.json
 /data_curation
+memory_bank.csv

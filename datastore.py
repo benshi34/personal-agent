@@ -108,10 +108,14 @@ class PineconeDatastore:
     
 
 
-    def write(self, text):
+    def write(self, text, datetime_obj = None):
 
         # preprend text with timestamp
-        timestamp = datetime.now().strftime("%B %d, %Y, %H:%M:%S")
+        if datetime_obj == None:
+            timestamp = datetime.now().strftime("%B %d, %Y, %H:%M:%S")
+        else:
+            timestamp = datetime_obj.strftime("%B %d, %Y, %H:%M:%S")
+
         text = f"{timestamp}: {text}"
 
         embedding = _get_text_embedding(text) # list rep of embedding
@@ -142,12 +146,19 @@ class PineconeDatastore:
             yield chunk
             chunk = tuple(itertools.islice(it, batch_size))
     
-    def batch_write(self, texts):
+    def batch_write(self, texts, datetime_objs = None):
         vectors = []
 
-        for text in texts:
+        for i in range(len(texts)):
+            
+            text = texts[i]
+
             # preprend text with timestamp
-            timestamp = datetime.now().strftime("%B %d, %Y, %H:%M:%S")
+            if datetime_objs == None:
+                timestamp = datetime.now().strftime("%B %d, %Y, %H:%M:%S")
+            else:
+                timestamp = datetime_objs[i].strftime("%B %d, %Y, %H:%M:%S")
+
             text = f"{timestamp}: {text}"
 
             embedding = _get_text_embedding(text) # list rep of embedding

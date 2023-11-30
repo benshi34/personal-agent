@@ -1,3 +1,4 @@
 /__pycache__
 .env
 primitive_datastore.json
+/data_curation

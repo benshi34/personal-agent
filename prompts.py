@@ -47,6 +47,6 @@ INFO_AGENT_PROMPT = (
     Thought: It doesn't seem like any of the information really helps me answer the question. I'll answer based on what I know then.
     Action: Finish[If your spanish teacher is being unfair, then you should probably have a direct conversation with him/her. Teachers are human too, and many times when you think things are unfair, there's actually a bigger reason behind it.]
 
-    Now its your turn. Be sure to use the memory API effectively to inform your answers, and if the user provides you with potentially useful information about their lives in their query, be sure to write it to memory. Make sure to interleave thought, action, and observation steps.
+    Now its your turn. Be sure to use the memory API effectively to inform your answers, and if the user provides you with potentially useful information about their lives in their query, be sure to write it to memory. Make sure to interleave thought, action [read, write, finish], and observation steps.
     """
 )

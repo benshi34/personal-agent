@@ -65,6 +65,7 @@ class MemoryAgent:
                 print(f"Bad function call: {function_call}")
                 return None
         except Exception as e:
+            print(e)
             print("Could not derive function call")
             return "String Parse Error"
         

@@ -1,19 +1,21 @@
-Towards Personalized Conversational LLMs
-Ben Shi and Rajiv Swamy
+# Towards Personalized Conversational LLMs
+By: Ben Shi and Rajiv Swamy
 
 
-Usage:
+## Usage:
 
 Create a conda environment with the following command:
-`conda env create -f env.yml`
+
+```conda env create -n personal_agent -f env.yml```
 
 Create a .env file in the personal-agent directory with the following keys:
-- OPENAI_API_KEY
-- PINECONE_API_KEY
-- PINECONE_ENVIRONMENT
-
+```
+OPENAI_API_KEY: <YOUR KEY HERE>
+PINECONE_API_KEY: <YOUR KEY HERE>
+PINECONE_ENVIRONMENT: <YOUR KEY HERE>
+```
 
 To run the web app from the terminal:
-- Ensure that a .env file exists in the personal-agent directory with the above keys
-- activate the personal_agent conda environment with `conda activate personal_agent`
-- run `streamlit run app.py`
+1. Ensure that a .env file exists in the personal-agent directory with the above keys
+2. activate the personal_agent conda environment with the command ```conda activate personal_agent```
+3. run ```streamlit run app.py```
